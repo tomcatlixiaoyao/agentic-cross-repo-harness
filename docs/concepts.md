@@ -43,3 +43,13 @@ Each repository is validated and committed independently. The control repository
 ## Degraded and blocked results
 
 The Harness does not convert missing infrastructure into success. If a validation layer cannot run, record it as `blocked` or `degraded`, explain the missing condition, and leave a concrete recovery point and next action.
+
+## Canonical instructions and adapters
+
+The root `AGENTS.md` is the canonical coding-agent contract. Files for Claude Code, Cursor, and
+GitHub Copilot are transport adapters, not independent policy documents. Keeping them thin prevents
+different tools from applying different repository boundaries or safety rules.
+
+The Harness treats every repository verification command as opaque text. Language-specific ownership
+stays inside the participant repository; the control plane coordinates evidence without interpreting or
+executing the command during structural validation.

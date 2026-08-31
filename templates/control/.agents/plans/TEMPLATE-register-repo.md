@@ -25,7 +25,7 @@ Excluded: business implementation, credentials, complete provider schemas, deplo
 | Repository | Allowed paths | Excluded paths |
 | --- | --- | --- |
 | `<control-id>` | `repos.yaml`, `docs/harness/inventory.md`, `AGENTS.md`, `*.code-workspace` | implementation |
-| `<new-id>` | `AGENTS.md` | all other paths |
+| `<new-id>` | `AGENTS.md` and confirmed thin tool adapters | all other paths |
 | every other registered repository | none | all |
 
 ## Contract Freeze
@@ -38,7 +38,8 @@ Excluded: business implementation, credentials, complete provider schemas, deplo
 4. Update the repository boundary table in `AGENTS.md`.
 5. Update the workspace folders.
 6. Add or update the participant repository's root `AGENTS.md` from the provided template.
-7. Run the Harness checker and repository-specific verification.
+7. Add only the confirmed thin adapters for coding agents used by that repository.
+8. Run the Harness checker and repository-specific verification.
 
 ## Validation Matrix
 

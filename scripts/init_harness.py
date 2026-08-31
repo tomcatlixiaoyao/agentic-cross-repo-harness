@@ -5,9 +5,19 @@ from __future__ import annotations
 
 import argparse
 import sys
+from dataclasses import replace
 from pathlib import Path
 
-from harness_lib import HarnessError, generated_files, is_dangerous_target, load_manifest
+from harness_lib import (
+    HarnessError,
+    SUPPORTED_AGENT_TOOLS,
+    detect_agent_tools,
+    generated_files,
+    is_dangerous_target,
+    load_manifest,
+    normalise_agent_tools,
+    resource_root,
+)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -22,18 +32,36 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--dry-run", action="store_true", help="show actions without writing files"
     )
+    parser.add_argument(
+        "--tools",
+        help=(
+            "comma-separated coding-agent adapters, or 'auto'; supported: "
+            + ", ".join(SUPPORTED_AGENT_TOOLS)
+        ),
+    )
     return parser.parse_args(argv)
 
 
 def initialise(
-    manifest_path: Path, target: Path, *, force: bool = False, dry_run: bool = False
+    manifest_path: Path,
+    target: Path,
+    *,
+    force: bool = False,
+    dry_run: bool = False,
+    tools: str | None = None,
 ) -> list[Path]:
     manifest = load_manifest(manifest_path)
     target = target.resolve()
     if is_dangerous_target(target):
         raise HarnessError(f"refusing dangerous target: {target}")
+    if tools == "auto":
+        manifest = replace(manifest, agent_tools=detect_agent_tools(target))
+    elif tools is not None:
+        manifest = replace(
+            manifest, agent_tools=normalise_agent_tools(tools, field="--tools")
+        )
 
-    template_root = Path(__file__).resolve().parent.parent / "templates" / "control"
+    template_root = resource_root() / "templates" / "control"
     files = generated_files(manifest, template_root)
     conflicts = [relative for relative in files if (target / relative).exists()]
     if conflicts and not force:
@@ -60,7 +88,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     try:
         files = initialise(
-            args.manifest, args.target, force=args.force, dry_run=args.dry_run
+            args.manifest,
+            args.target,
+            force=args.force,
+            dry_run=args.dry_run,
+            tools=args.tools,
         )
     except HarnessError as exc:
         print(f"error: {exc}", file=sys.stderr)

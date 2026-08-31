@@ -5,12 +5,22 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+import sys
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
 
 ALLOWED_ROLES = {"control", "provider", "consumer", "participant", "shared"}
+HARNESS_VERSION = "0.2.0"
+SUPPORTED_AGENT_TOOLS = ("codex", "cursor", "claude", "copilot")
+LEGACY_AGENT_TOOLS = ("codex", "cursor")
+AGENT_TOOL_CONFIG_PATHS = {
+    "cursor": Path(".cursor/rules/harness-control.mdc"),
+    "claude": Path("CLAUDE.md"),
+    "copilot": Path(".github/copilot-instructions.md"),
+}
 ID_PATTERN = re.compile(r"^[a-z][a-z0-9-]{0,62}$")
 PRODUCT_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._ -]{0,79}$")
 
@@ -34,6 +44,7 @@ class Manifest:
     version: int
     product: str
     repositories: tuple[Repository, ...]
+    agent_tools: tuple[str, ...]
 
     @property
     def control(self) -> Repository:
@@ -82,6 +93,10 @@ def load_manifest(path: Path) -> Manifest:
     product = _require_scalar(data.get("product"), "product")
     if not PRODUCT_PATTERN.fullmatch(product):
         raise HarnessError("product contains unsupported characters or is too long")
+
+    agent_tools = normalise_agent_tools(
+        data.get("agent_tools", list(SUPPORTED_AGENT_TOOLS)), field="agent_tools"
+    )
 
     raw_repositories = data.get("repositories")
     if not isinstance(raw_repositories, list) or len(raw_repositories) < 2:
@@ -133,13 +148,67 @@ def load_manifest(path: Path) -> Manifest:
     if any(repo.path == "." and repo.role != "control" for repo in repositories):
         raise HarnessError("only the control repository may use path '.'")
 
-    return Manifest(1, product, tuple(repositories))
+    return Manifest(1, product, tuple(repositories), agent_tools)
+
+
+def normalise_agent_tools(value: Any, *, field: str = "agent_tools") -> tuple[str, ...]:
+    if isinstance(value, str):
+        raw_tools = [item.strip() for item in value.split(",") if item.strip()]
+    elif isinstance(value, list) and all(isinstance(item, str) for item in value):
+        raw_tools = [item.strip() for item in value if item.strip()]
+    else:
+        raise HarnessError(f"{field} must be a comma-separated string or array of strings")
+
+    if len(raw_tools) != len(set(raw_tools)):
+        raise HarnessError(f"{field} must not contain duplicate tools")
+    unknown = sorted(set(raw_tools) - set(SUPPORTED_AGENT_TOOLS))
+    if unknown:
+        raise HarnessError(
+            f"{field} contains unsupported tools: {', '.join(unknown)}; "
+            f"supported: {', '.join(SUPPORTED_AGENT_TOOLS)}"
+        )
+    if not raw_tools:
+        raise HarnessError(f"{field} must select at least one agent tool")
+    selected = set(raw_tools)
+    return tuple(tool for tool in SUPPORTED_AGENT_TOOLS if tool in selected)
+
+
+def detect_agent_tools(target: Path) -> tuple[str, ...]:
+    """Detect existing project conventions, defaulting to the portable full set."""
+    target = target.resolve()
+    detected: set[str] = set()
+    if (target / ".codex").exists() or (target / "AGENTS.md").is_file():
+        detected.add("codex")
+    if (target / ".cursor").exists():
+        detected.add("cursor")
+    if (target / "CLAUDE.md").is_file() or (target / ".claude").exists():
+        detected.add("claude")
+    if (target / ".github/copilot-instructions.md").is_file():
+        detected.add("copilot")
+    if not detected:
+        return SUPPORTED_AGENT_TOOLS
+    return tuple(tool for tool in SUPPORTED_AGENT_TOOLS if tool in detected)
+
+
+def installed_agent_commands() -> dict[str, str | None]:
+    """Return optional local CLI evidence; IDE-only tools may legitimately be absent."""
+    candidates = {
+        "codex": ("codex",),
+        "cursor": ("cursor-agent", "cursor"),
+        "claude": ("claude",),
+        "copilot": ("copilot",),
+    }
+    return {
+        tool: next((path for command in commands if (path := shutil.which(command))), None)
+        for tool, commands in candidates.items()
+    }
 
 
 def manifest_payload(manifest: Manifest) -> dict[str, Any]:
     return {
         "version": manifest.version,
         "product": manifest.product,
+        "agent_tools": list(manifest.agent_tools),
         "repositories": {
             repo.repo_id: {
                 "path": repo.path,
@@ -264,9 +333,12 @@ def render_control_readme(manifest: Manifest) -> str:
         if repo.role != "control"
     )
     workspace_name = f"{slugify(manifest.product)}.code-workspace"
+    tools = ", ".join(manifest.agent_tools)
     return f"""# {manifest.product} Cross-Repository Harness
 
 This control repository coordinates registered sibling repositories without duplicating their implementation or contract truth.
+
+Configured coding-agent adapters: **{tools}**. `AGENTS.md` is the canonical instruction source; tool-specific files only point agents back to it.
 
 ## Registered repositories
 
@@ -274,10 +346,10 @@ This control repository coordinates registered sibling repositories without dupl
 
 ## Start here
 
-1. Open `{workspace_name}` in VS Code or Cursor, or open this control repository as the Codex project root.
+1. Open `{workspace_name}` in your coding agent, or open this control repository as the project root.
 2. Read `AGENTS.md`, `repos.yaml`, `docs/harness/inventory.md`, and `.agents/PLANS.md`.
 3. For a cross-repository change, create an ExecPlan from `.agents/plans/TEMPLATE-cross-repo.md`.
-4. Run `python scripts/check_harness.py --root .` from this generated control repository.
+4. Run `python scripts/check_harness.py --root .` and `python scripts/doctor_harness.py --root .` from this generated control repository.
 
 The Harness never grants itself permission to publish, deploy, change access, delete data, or write outside an approved ExecPlan.
 """
@@ -298,8 +370,11 @@ def template_files(template_root: Path) -> dict[Path, str]:
 
 def generated_files(manifest: Manifest, template_root: Path) -> dict[Path, str]:
     files = template_files(template_root)
-    project_root = template_root.parents[1]
-    for script_name in ("check_harness.py", "harness_lib.py"):
+    for tool, relative in AGENT_TOOL_CONFIG_PATHS.items():
+        if tool not in manifest.agent_tools:
+            files.pop(relative, None)
+    project_root = resource_root()
+    for script_name in ("check_harness.py", "doctor_harness.py", "harness_lib.py"):
         source = project_root / "scripts" / script_name
         files[Path("scripts") / script_name] = source.read_text(encoding="utf-8")
     files[Path("repos.yaml")] = json.dumps(
@@ -310,6 +385,14 @@ def generated_files(manifest: Manifest, template_root: Path) -> dict[Path, str]:
     files[Path("docs/harness/inventory.md")] = render_inventory(manifest)
     files[Path(f"{slugify(manifest.product)}.code-workspace")] = render_workspace(manifest)
     return files
+
+
+def resource_root() -> Path:
+    """Locate bundled templates in source checkouts and frozen executables."""
+    frozen_root = getattr(sys, "_MEIPASS", None)
+    if frozen_root:
+        return Path(frozen_root)
+    return Path(__file__).resolve().parent.parent
 
 
 def is_dangerous_target(path: Path) -> bool:

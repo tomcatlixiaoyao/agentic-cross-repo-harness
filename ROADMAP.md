@@ -2,9 +2,11 @@
 
 The roadmap favors safer adoption and clearer evidence over broad orchestration.
 
-## 0.2 - Easier adoption
+## 0.2 - Portable adoption
 
-- Package a single command for initialization and validation.
+- Provide a unified command for initialization, validation, and diagnostics. (implemented)
+- Generate thin Codex, Cursor, Claude Code, and GitHub Copilot adapters from one canonical policy. (implemented)
+- Build standalone Windows, Linux, and macOS release assets. (automation implemented; first tagged release pending)
 - Add a complete provider/consumer example with expected generated output.
 - Add continuous integration for tests and public-content scanning.
 - Validate the manifest against the published JSON Schema.
@@ -12,7 +14,7 @@ The roadmap favors safer adoption and clearer evidence over broad orchestration.
 
 ## 0.3 - Ecosystem integration
 
-- Document integration patterns for multiple coding-agent products.
+- Add adapters for Gemini CLI and other tools with stable repository instruction formats.
 - Add optional issue and pull-request writeback adapters behind explicit confirmation.
 - Add contract hash and snapshot-drift reporting without duplicating provider truth.
 - Add migration guidance for existing multi-repository workspaces.

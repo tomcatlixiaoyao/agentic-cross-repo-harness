@@ -9,7 +9,7 @@ git clone https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness.git
 cd agentic-cross-repo-harness
 ```
 
-Requirements: Python 3.10 or newer. The generator uses no third-party Python packages.
+Requirements when running from source: Python 3.10 or newer. The generator uses no third-party Python packages.
 
 On Windows, use `python` or `py -3`. On Linux and macOS, use `python3` if `python` is not available.
 
@@ -28,7 +28,9 @@ The manifest uses `.` for the future control repository and explicit `../<name>`
 
 ## 3. Create a manifest
 
-Copy `examples/manifest.json` and adjust it for your repositories. Every entry requires:
+Copy `examples/manifest.json` and adjust it for your repositories. The optional top-level
+`agent_tools` array selects generated adapters: `codex`, `cursor`, `claude`, and `copilot`.
+If omitted, all adapters are generated. Every repository entry requires:
 
 - `id`: lowercase kebab-case identifier;
 - `path`: `.` or a participant path beginning with `../`;
@@ -44,7 +46,7 @@ Exactly one entry must use role `control` and path `.`.
 Linux/macOS:
 
 ```bash
-python3 scripts/init_harness.py \
+python3 scripts/harness_cli.py init \
   --manifest examples/manifest.json \
   --target ../sample-product-harness \
   --dry-run
@@ -53,7 +55,7 @@ python3 scripts/init_harness.py \
 Windows PowerShell:
 
 ```powershell
-python scripts/init_harness.py `
+python scripts/harness_cli.py init `
   --manifest examples/manifest.json `
   --target ../sample-product-harness `
   --dry-run
@@ -66,7 +68,7 @@ The preview lists every managed file without creating the target directory.
 Linux/macOS:
 
 ```bash
-python3 scripts/init_harness.py \
+python3 scripts/harness_cli.py init \
   --manifest examples/manifest.json \
   --target ../sample-product-harness
 ```
@@ -74,12 +76,15 @@ python3 scripts/init_harness.py \
 Windows PowerShell:
 
 ```powershell
-python scripts/init_harness.py `
+python scripts/harness_cli.py init `
   --manifest examples/manifest.json `
   --target ../sample-product-harness
 ```
 
 The initializer refuses to overwrite managed files unless `--force` is supplied. `--force` replaces only its managed output set; it does not delete unrelated files.
+
+Pass `--tools cursor,claude` to override the manifest. Pass `--tools auto` to preserve recognized
+adapter conventions in an existing target; a new target receives all supported adapters.
 
 ## 6. Validate the generated repository
 
@@ -98,12 +103,19 @@ Harness validation passed
 
 Add `--verify-paths` only when every registered participant should already exist locally. The checker verifies paths but never runs participant commands.
 
+Diagnose the generated setup without executing repository commands:
+
+```bash
+python ../sample-product-harness/scripts/doctor_harness.py --root ../sample-product-harness
+```
+
 ## 7. Inspect before committing
 
 Review these files first:
 
 - `repos.yaml`: machine-readable registry;
 - `AGENTS.md`: cross-repository operating rules;
+- `CLAUDE.md`, `.cursor/rules/`, and `.github/copilot-instructions.md`: thin pointers to `AGENTS.md`;
 - `docs/harness/inventory.md`: review-friendly responsibility map;
 - `.agents/PLANS.md`: plan requirements;
 - `.agents/plans/TEMPLATE-cross-repo.md`: per-task write boundary.
@@ -116,6 +128,8 @@ The initializer deliberately leaves participant repositories untouched. For each
 2. confirm id, path, role, duty, contracts, and verification command;
 3. adapt `docs/harness/PARTICIPANT_AGENTS_TEMPLATE.md` inside the participant repository;
 4. verify and commit the control and participant repositories independently.
+
+See [Coding-Agent Compatibility](agent-tool-compatibility.md) for adapter behavior and language-neutral examples.
 
 ## 9. Start a cross-repository task
 

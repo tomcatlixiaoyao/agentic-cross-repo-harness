@@ -2,11 +2,12 @@
 
 English | [简体中文](README.zh-CN.md)
 
-Safely coordinate AI coding agents across multiple Git repositories.
+Safely coordinate any coding agent across repositories, without coupling the workflow to an application language.
 
 This project generates a lightweight **control repository** that makes cross-repository work explicit: which repositories an agent may change, who owns contract truth, how every repository is verified, and where execution can safely resume.
 
-It is provider-neutral, uses only the Python standard library, and never modifies participant repositories during initialization.
+It is provider-neutral, generates adapters for Codex, Cursor, Claude Code, and GitHub Copilot,
+uses only the Python standard library when run from source, and never modifies participant repositories during initialization.
 
 ## What you get
 
@@ -15,7 +16,12 @@ It is provider-neutral, uses only the Python standard library, and never modifie
 - provider/consumer rules that prevent copied contracts from becoming competing truth;
 - repository-local verification and rollback units;
 - a read-only structural checker;
+- thin coding-agent adapters backed by one canonical `AGENTS.md`;
+- a doctor command that explains adapter and verification readiness;
 - public-content scanning for common private-data indicators.
+
+Repository verification commands are opaque strings, so participants can use Maven, Gradle, npm,
+Go, Cargo, or any other repository-owned toolchain.
 
 ## Who it is for
 
@@ -56,36 +62,42 @@ The control repository coordinates work. It does not become a third copy of impl
 
 ## Three-minute example
 
-Requirements: Git and Python 3.10 or newer. No third-party Python packages are required.
+Requirements when running from source: Git and Python 3.10 or newer. No third-party Python packages are required.
+Tagged releases are configured to publish standalone Windows, Linux, and macOS executables.
 
 ```bash
 git clone https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness.git
 cd agentic-cross-repo-harness
 
-python scripts/init_harness.py \
+python scripts/harness_cli.py init \
   --manifest examples/manifest.json \
   --target ../sample-product-harness \
+  --tools auto \
   --dry-run
 
-python scripts/init_harness.py \
+python scripts/harness_cli.py init \
   --manifest examples/manifest.json \
-  --target ../sample-product-harness
+  --target ../sample-product-harness \
+  --tools auto
 
-python ../sample-product-harness/scripts/check_harness.py \
-  --root ../sample-product-harness
+python scripts/harness_cli.py check --root ../sample-product-harness
+python scripts/harness_cli.py doctor --root ../sample-product-harness
 ```
 
-Expected final message:
+Expected validation message:
 
 ```text
 Harness validation passed
 ```
+
+Doctor then reports each configured adapter and finishes with a structural-check result.
 
 The generated control repository contains:
 
 ```text
 sample-product-harness/
 ├── AGENTS.md
+├── CLAUDE.md
 ├── README.md
 ├── repos.yaml
 ├── sample-product.code-workspace
@@ -95,8 +107,10 @@ sample-product-harness/
 │       ├── TEMPLATE-cross-repo.md
 │       └── TEMPLATE-register-repo.md
 ├── .cursor/rules/harness-control.mdc
+├── .github/copilot-instructions.md
 ├── scripts/
 │   ├── check_harness.py
+│   ├── doctor_harness.py
 │   └── harness_lib.py
 ├── contracts/INDEX.md
 └── docs/harness/
@@ -106,6 +120,9 @@ sample-product-harness/
 ```
 
 The initializer writes only inside `--target`. It does not edit `../sample-api`, `../sample-web`, or any other sibling.
+
+`AGENTS.md` is the only authoritative agent policy. Claude imports it, while Cursor and Copilot
+adapters point back to it. See [Coding-Agent Compatibility](docs/agent-tool-compatibility.md).
 
 For Windows PowerShell instructions and a field-by-field manifest guide, see the [full quick start](docs/quick-start.md).
 
@@ -136,7 +153,9 @@ See [Concepts](docs/concepts.md) and the [Security Model](docs/security-model.md
 
 ## Project status
 
-Version `0.1.0` is a working public foundation with deterministic generation, structural validation, tests, and private-content scanning. It deliberately does not orchestrate deployments, merges, issue trackers, or arbitrary commands across sibling repositories.
+Version `0.2.0` adds multi-agent-tool adapters, automatic adapter selection, a unified CLI, doctor diagnostics,
+and portable executable build automation. It deliberately does not orchestrate deployments, merges,
+issue trackers, or arbitrary commands across sibling repositories.
 
 - [Roadmap](ROADMAP.md)
 - [Changelog](CHANGELOG.md)
