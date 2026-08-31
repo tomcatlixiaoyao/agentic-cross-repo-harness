@@ -2,13 +2,20 @@
 
 All notable project changes are recorded here.
 
-## Unreleased
+## 0.2.0 - 2026-08-31
 
+- Added one canonical `AGENTS.md` policy with generated Cursor, Claude Code, and GitHub Copilot adapters.
+- Added manifest and CLI selection for `codex`, `cursor`, `claude`, and `copilot`, including automatic detection.
+- Added a unified `harness` command surface with `init`, `check`, and read-only `doctor` commands.
+- Added PyInstaller and GitHub Actions configuration for standalone Windows, Linux, and macOS release assets.
+- Documented language-neutral verification and coding-agent compatibility.
 - Clarified the project outcome and intended audience in the README.
 - Added a complete three-minute example and generated-tree preview.
 - Added Simplified Chinese documentation entry points.
 - Expanded the quick start for fresh clones and Windows PowerShell.
 - Added a public roadmap.
+- Added a tested Java API provider and web consumer walkthrough with an illustrative ExecPlan and expected generated output.
+- Added provider-neutral guidance for using Codebase Memory as an optional local analysis layer without expanding Harness authority.
 
 ## 0.1.0 - 2026-08-31
 

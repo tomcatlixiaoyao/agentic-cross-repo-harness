@@ -12,6 +12,7 @@ SCRIPTS = PROJECT_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from check_harness import validate  # noqa: E402
+from doctor_harness import diagnose  # noqa: E402
 from harness_lib import HarnessError, load_manifest  # noqa: E402
 from init_harness import initialise  # noqa: E402
 from scan_public import scan  # noqa: E402
@@ -61,7 +62,10 @@ class HarnessTests(unittest.TestCase):
             root = Path(temporary)
             manifest = load_manifest(self.write_manifest(root))
             self.assertEqual(manifest.control.repo_id, "harness")
-            self.assertEqual([repo.repo_id for repo in manifest.repositories], ["harness", "api", "web"])
+            self.assertEqual(
+                [repo.repo_id for repo in manifest.repositories],
+                ["harness", "api", "web"],
+            )
 
     def test_manifest_rejects_absolute_participant_path(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -95,8 +99,60 @@ class HarnessTests(unittest.TestCase):
             written = initialise(manifest, target)
             self.assertGreaterEqual(len(written), 10)
             self.assertTrue((target / "AGENTS.md").is_file())
+            self.assertEqual(
+                (target / "CLAUDE.md").read_text(encoding="utf-8"), "@AGENTS.md\n"
+            )
+            self.assertTrue((target / ".cursor/rules/harness-control.mdc").is_file())
+            self.assertTrue((target / ".github/copilot-instructions.md").is_file())
             self.assertTrue((target / "test-product.code-workspace").is_file())
             self.assertEqual(validate(target), [])
+
+    def test_initializer_generates_only_selected_tool_adapters(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            data = manifest_data()
+            data["agent_tools"] = ["cursor", "claude"]
+            target = root / "test-harness"
+            initialise(self.write_manifest(root, data), target)
+            self.assertTrue((target / "AGENTS.md").is_file())
+            self.assertTrue((target / "CLAUDE.md").is_file())
+            self.assertTrue((target / ".cursor/rules/harness-control.mdc").is_file())
+            self.assertFalse((target / ".github/copilot-instructions.md").exists())
+            generated_manifest = json.loads(
+                (target / "repos.yaml").read_text(encoding="utf-8")
+            )
+            self.assertEqual(generated_manifest["agent_tools"], ["cursor", "claude"])
+            self.assertEqual(validate(target), [])
+
+    def test_auto_tools_detects_existing_convention(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "test-harness"
+            (target / ".claude").mkdir(parents=True)
+            initialise(self.write_manifest(root), target, tools="auto")
+            generated_manifest = json.loads(
+                (target / "repos.yaml").read_text(encoding="utf-8")
+            )
+            self.assertEqual(generated_manifest["agent_tools"], ["claude"])
+            self.assertTrue((target / "CLAUDE.md").is_file())
+            self.assertFalse((target / ".cursor").exists())
+            self.assertEqual(validate(target), [])
+
+    def test_manifest_rejects_unknown_agent_tool(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            data = manifest_data()
+            data["agent_tools"] = ["unknown-agent"]
+            with self.assertRaises(HarnessError):
+                load_manifest(self.write_manifest(root, data))
+
+    def test_manifest_rejects_duplicate_agent_tool(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            data = manifest_data()
+            data["agent_tools"] = ["cursor", "cursor"]
+            with self.assertRaises(HarnessError):
+                load_manifest(self.write_manifest(root, data))
 
     def test_dry_run_does_not_create_target(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -147,7 +203,70 @@ class HarnessTests(unittest.TestCase):
             target = root / "test-harness"
             initialise(self.write_manifest(root), target)
             findings = validate(target, verify_paths=True)
-            self.assertTrue(any("registered sibling does not exist" in finding for finding in findings))
+            self.assertTrue(
+                any("registered sibling does not exist" in finding for finding in findings)
+            )
+
+    def test_checker_detects_missing_configured_adapter(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "test-harness"
+            initialise(self.write_manifest(root), target)
+            (target / "CLAUDE.md").unlink()
+            self.assertIn("missing claude adapter: CLAUDE.md", validate(target))
+
+    def test_checker_accepts_legacy_generated_registry(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "test-harness"
+            initialise(self.write_manifest(root), target)
+            registry_path = target / "repos.yaml"
+            registry = json.loads(registry_path.read_text(encoding="utf-8"))
+            registry.pop("agent_tools")
+            registry_path.write_text(json.dumps(registry), encoding="utf-8")
+            (target / "CLAUDE.md").unlink()
+            (target / ".github/copilot-instructions.md").unlink()
+            (target / "scripts/doctor_harness.py").unlink()
+            self.assertEqual(validate(target), [])
+
+    def test_doctor_reports_language_neutral_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "test-harness"
+            initialise(self.write_manifest(root), target)
+            failures, notes = diagnose(target)
+            self.assertEqual(failures, [])
+            self.assertTrue(any("language-neutral command" in note for note in notes))
+
+    def test_java_api_web_example_generates_valid_harness(self) -> None:
+        manifest = PROJECT_ROOT / "examples" / "java-api-web" / "manifest.json"
+        loaded = load_manifest(manifest)
+        self.assertEqual(loaded.product, "catalog-delivery-window")
+        self.assertEqual(
+            [(repo.repo_id, repo.role) for repo in loaded.repositories],
+            [
+                ("harness", "control"),
+                ("catalog-api", "provider"),
+                ("storefront-web", "consumer"),
+            ],
+        )
+        self.assertEqual(
+            loaded.repositories[1].contracts,
+            loaded.repositories[2].contracts,
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "catalog-change-harness"
+            initialise(manifest, target)
+            self.assertEqual(validate(target), [])
+            registry = json.loads((target / "repos.yaml").read_text(encoding="utf-8"))
+            self.assertEqual(
+                registry["repositories"]["catalog-api"]["verify"],
+                "./mvnw test",
+            )
+            self.assertEqual(
+                registry["repositories"]["storefront-web"]["verify"],
+                "npm test && npm run build",
+            )
 
     def test_public_scanner_detects_secret_like_value(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

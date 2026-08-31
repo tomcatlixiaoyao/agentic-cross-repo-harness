@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "product": "catalog-delivery-window",
+  "agent_tools": ["codex", "cursor", "claude", "copilot"],
+  "repositories": [
+    {
+      "id": "harness",
+      "path": ".",
+      "role": "control",
+      "duty": "Own cross-repository authorisation, plans, contract references, and integration evidence",
+      "contracts": [],
+      "verify": "python scripts/check_harness.py --root ."
+    },
+    {
+      "id": "catalog-api",
+      "path": "../catalog-api",
+      "role": "provider",
+      "duty": "Own the catalog API contract and Java service implementation",
+      "contracts": ["catalog-api-v1"],
+      "verify": "./mvnw test"
+    },
+    {
+      "id": "storefront-web",
+      "path": "../storefront-web",
+      "role": "consumer",
+      "duty": "Own the generated catalog client and storefront presentation",
+      "contracts": ["catalog-api-v1"],
+      "verify": "npm test && npm run build"
+    }
+  ]
+}

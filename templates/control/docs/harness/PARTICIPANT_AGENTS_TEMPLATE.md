@@ -25,3 +25,16 @@ For work that affects another registered repository, open the control workspace 
 ```
 
 Do not copy temporary task state, business secrets, or a complete provider schema into this file.
+
+## Coding-agent adapters
+
+Keep the participant `AGENTS.md` above as its canonical local guidance. Add only the adapters used by
+the team:
+
+- Claude Code: create a root `CLAUDE.md` containing only `@AGENTS.md`.
+- Cursor: root `AGENTS.md` is sufficient; an always-applied `.cursor/rules/*.mdc` may point to it.
+- GitHub Copilot: add `.github/copilot-instructions.md` that tells Copilot to read and follow root `AGENTS.md`.
+- Codex: reads root and nested `AGENTS.md` directly.
+
+These participant files must be added only through a confirmed registration ExecPlan. The initializer
+does not write them automatically.

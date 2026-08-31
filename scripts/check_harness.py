@@ -9,7 +9,14 @@ import sys
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from harness_lib import ALLOWED_ROLES, HarnessError, ID_PATTERN
+from harness_lib import (
+    AGENT_TOOL_CONFIG_PATHS,
+    ALLOWED_ROLES,
+    HarnessError,
+    ID_PATTERN,
+    LEGACY_AGENT_TOOLS,
+    normalise_agent_tools,
+)
 
 
 REQUIRED_FILES = (
@@ -56,6 +63,13 @@ def _load_repos(root: Path) -> dict[str, Any]:
         ) from exc
     if not isinstance(data, dict) or data.get("version") != 1:
         raise HarnessError("repos.yaml version must be 1")
+    try:
+        normalise_agent_tools(
+            data.get("agent_tools", list(LEGACY_AGENT_TOOLS)),
+            field="repos.yaml agent_tools",
+        )
+    except HarnessError as exc:
+        raise HarnessError(str(exc)) from exc
     repositories = data.get("repositories")
     if not isinstance(repositories, dict) or len(repositories) < 2:
         raise HarnessError("repos.yaml must register control and at least one participant")
@@ -76,6 +90,24 @@ def validate(root: Path, *, verify_paths: bool = False) -> list[str]:
         return findings
 
     repositories = data["repositories"]
+    if "agent_tools" in data and not (root / "scripts/doctor_harness.py").is_file():
+        findings.append("missing required file: scripts/doctor_harness.py")
+    agent_tools = normalise_agent_tools(
+        data.get("agent_tools", list(LEGACY_AGENT_TOOLS)),
+        field="repos.yaml agent_tools",
+    )
+    for tool in agent_tools:
+        adapter_path = AGENT_TOOL_CONFIG_PATHS.get(tool)
+        if adapter_path is None:
+            continue
+        adapter = root / adapter_path
+        if not adapter.is_file():
+            findings.append(f"missing {tool} adapter: {adapter_path.as_posix()}")
+        elif "AGENTS.md" not in _safe_read(adapter):
+            findings.append(
+                f"{tool} adapter must reference canonical AGENTS.md: "
+                f"{adapter_path.as_posix()}"
+            )
     controls: list[str] = []
     seen_paths: set[str] = set()
     for repo_id, item in repositories.items():

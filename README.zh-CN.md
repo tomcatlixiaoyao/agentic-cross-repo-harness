@@ -2,11 +2,12 @@
 
 [English](README.md) | 简体中文
 
-安全地协调 AI 编码智能体跨多个 Git 仓库工作。
+让不同 AI 编程工具安全地跨多个 Git 仓库协作，同时不限制参与项目的开发语言。
 
 本项目用于生成一个轻量级的**控制仓库（Control Repository）**，把跨仓任务中的关键边界写清楚：智能体可以修改哪些仓库、谁拥有契约真相、每个仓库如何独立验证，以及任务中断后从哪里安全恢复。
 
-它不绑定特定 AI 工具，只依赖 Python 标准库，并且初始化时绝不会修改参与项目的仓库。
+它不绑定特定 AI 工具，可为 Codex、Cursor、Claude Code 和 GitHub Copilot 生成适配文件；
+从源码运行时只依赖 Python 标准库，并且初始化时绝不会修改参与项目的仓库。
 
 ## 它解决什么问题
 
@@ -27,7 +28,12 @@ Harness 将这些约束落成可审查的仓库文件和确定性检查。
 - 防止契约出现多份真相的 Provider/Consumer 规则；
 - 每个仓库独立的验证和回滚单元；
 - 不执行任何业务命令的只读结构校验器；
+- 由同一份 `AGENTS.md` 驱动的轻量 AI 工具适配层；
+- 用于说明适配状态和验证配置的 doctor 命令；
 - 面向公开发布的常见敏感信息扫描器。
+
+各仓库的验证命令会被视为不透明字符串，因此参与项目可以使用 Maven、Gradle、npm、Go、Cargo
+或任意仓库自带的工具链。
 
 ## 适合谁
 
@@ -65,36 +71,42 @@ flowchart LR
 
 ## 三分钟体验
 
-前置条件：Git、Python 3.10 或更高版本。不需要安装第三方 Python 依赖。
+从源码运行的前置条件：Git、Python 3.10 或更高版本，不需要安装第三方 Python 依赖。
+带版本标签的发布流程已经配置为生成 Windows、Linux 和 macOS 独立可执行程序。
 
 ```bash
 git clone https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness.git
 cd agentic-cross-repo-harness
 
-python scripts/init_harness.py \
+python scripts/harness_cli.py init \
   --manifest examples/manifest.json \
   --target ../sample-product-harness \
+  --tools auto \
   --dry-run
 
-python scripts/init_harness.py \
+python scripts/harness_cli.py init \
   --manifest examples/manifest.json \
-  --target ../sample-product-harness
+  --target ../sample-product-harness \
+  --tools auto
 
-python ../sample-product-harness/scripts/check_harness.py \
-  --root ../sample-product-harness
+python scripts/harness_cli.py check --root ../sample-product-harness
+python scripts/harness_cli.py doctor --root ../sample-product-harness
 ```
 
-成功时最后会看到：
+校验成功时会看到：
 
 ```text
 Harness validation passed
 ```
+
+随后 doctor 会列出各适配器状态，并给出结构检查结果。
 
 生成结果如下：
 
 ```text
 sample-product-harness/
 ├── AGENTS.md
+├── CLAUDE.md
 ├── README.md
 ├── repos.yaml
 ├── sample-product.code-workspace
@@ -104,8 +116,10 @@ sample-product-harness/
 │       ├── TEMPLATE-cross-repo.md
 │       └── TEMPLATE-register-repo.md
 ├── .cursor/rules/harness-control.mdc
+├── .github/copilot-instructions.md
 ├── scripts/
 │   ├── check_harness.py
+│   ├── doctor_harness.py
 │   └── harness_lib.py
 ├── contracts/INDEX.md
 └── docs/harness/
@@ -116,7 +130,17 @@ sample-product-harness/
 
 初始化器只会写入 `--target`，不会修改 `../sample-api`、`../sample-web` 或其他兄弟仓库。
 
+`AGENTS.md` 是唯一权威的智能体规则。Claude Code 导入它，Cursor 和 Copilot 的适配文件只负责
+将工具引导回该文件，详见[AI 编程工具兼容说明](docs/agent-tool-compatibility.zh-CN.md)。
+
 Windows PowerShell 命令和 manifest 字段说明请查看[完整快速开始](docs/quick-start.md)。
+
+如需查看 Java API Provider 与 Web Consumer 之间一次完整的契约变更，请使用
+[端到端示例](examples/java-api-web/README.md)。示例包含填写好的执行前 ExecPlan、预期生成结果、
+独立的 Maven/npm 验证和回滚边界。
+
+已经使用本地代码图谱的团队还可以参考[Codebase Memory 可选集成](docs/codebase-memory-integration.zh-CN.md)。
+结构分析可以建议影响范围，但不能授予 Harness 写入权限。
 
 ## 写入边界示例
 
@@ -145,7 +169,8 @@ Windows PowerShell 命令和 manifest 字段说明请查看[完整快速开始](
 
 ## 项目状态
 
-`0.1.0` 是可以运行的公开基础版本，已经具备确定性生成、结构校验、测试和敏感信息扫描。它目前不会自动执行部署、合并 PR、操作 Issue 系统或跨仓运行任意命令。
+`0.2.0` 增加了多 AI 工具适配、自动适配选择、统一命令入口、doctor 诊断和独立程序构建自动化。
+它仍不会自动执行部署、合并 PR、操作 Issue 系统或跨仓运行任意命令。
 
 - [路线图](ROADMAP.md)
 - [版本记录](CHANGELOG.md)
