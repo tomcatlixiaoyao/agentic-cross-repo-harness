@@ -2,6 +2,10 @@
 
 All notable project changes are recorded here.
 
+## Unreleased
+
+- Upgraded GitHub Actions dependencies to their Node.js 24 runtime versions.
+
 ## 0.2.0 - 2026-08-31
 
 - Added one canonical `AGENTS.md` policy with generated Cursor, Claude Code, and GitHub Copilot adapters.
