@@ -135,6 +135,13 @@ sample-product-harness/
 
 Windows PowerShell 命令和 manifest 字段说明请查看[完整快速开始](docs/quick-start.md)。
 
+如需查看 Java API Provider 与 Web Consumer 之间一次完整的契约变更，请使用
+[端到端示例](examples/java-api-web/README.md)。示例包含填写好的执行前 ExecPlan、预期生成结果、
+独立的 Maven/npm 验证和回滚边界。
+
+已经使用本地代码图谱的团队还可以参考[Codebase Memory 可选集成](docs/codebase-memory-integration.zh-CN.md)。
+结构分析可以建议影响范围，但不能授予 Harness 写入权限。
+
 ## 写入边界示例
 
 每次跨仓任务都要复制生成的 ExecPlan 模板，并列出所有已注册仓库：

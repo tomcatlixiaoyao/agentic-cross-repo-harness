@@ -2,7 +2,7 @@
 
 All notable project changes are recorded here.
 
-## Unreleased
+## 0.2.0 - Unreleased
 
 - Added one canonical `AGENTS.md` policy with generated Cursor, Claude Code, and GitHub Copilot adapters.
 - Added manifest and CLI selection for `codex`, `cursor`, `claude`, and `copilot`, including automatic detection.
@@ -14,6 +14,8 @@ All notable project changes are recorded here.
 - Added Simplified Chinese documentation entry points.
 - Expanded the quick start for fresh clones and Windows PowerShell.
 - Added a public roadmap.
+- Added a tested Java API provider and web consumer walkthrough with an illustrative ExecPlan and expected generated output.
+- Added provider-neutral guidance for using Codebase Memory as an optional local analysis layer without expanding Harness authority.
 
 ## 0.1.0 - 2026-08-31
 

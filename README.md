@@ -126,6 +126,14 @@ adapters point back to it. See [Coding-Agent Compatibility](docs/agent-tool-comp
 
 For Windows PowerShell instructions and a field-by-field manifest guide, see the [full quick start](docs/quick-start.md).
 
+For a concrete contract change across a Java API provider and web consumer, follow the
+[end-to-end example](examples/java-api-web/README.md). It includes a filled, pre-execution
+ExecPlan, expected generated output, independent Maven/npm validation, and rollback boundaries.
+
+Teams that already use a local code graph can also follow the optional
+[Codebase Memory integration](docs/codebase-memory-integration.md). Structural analysis may
+suggest impact, but it never grants Harness write authority.
+
 ## The safety boundary
 
 For every cross-repository task, copy the generated ExecPlan template and list every registered repository:

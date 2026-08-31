@@ -238,6 +238,36 @@ class HarnessTests(unittest.TestCase):
             self.assertEqual(failures, [])
             self.assertTrue(any("language-neutral command" in note for note in notes))
 
+    def test_java_api_web_example_generates_valid_harness(self) -> None:
+        manifest = PROJECT_ROOT / "examples" / "java-api-web" / "manifest.json"
+        loaded = load_manifest(manifest)
+        self.assertEqual(loaded.product, "catalog-delivery-window")
+        self.assertEqual(
+            [(repo.repo_id, repo.role) for repo in loaded.repositories],
+            [
+                ("harness", "control"),
+                ("catalog-api", "provider"),
+                ("storefront-web", "consumer"),
+            ],
+        )
+        self.assertEqual(
+            loaded.repositories[1].contracts,
+            loaded.repositories[2].contracts,
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "catalog-change-harness"
+            initialise(manifest, target)
+            self.assertEqual(validate(target), [])
+            registry = json.loads((target / "repos.yaml").read_text(encoding="utf-8"))
+            self.assertEqual(
+                registry["repositories"]["catalog-api"]["verify"],
+                "./mvnw test",
+            )
+            self.assertEqual(
+                registry["repositories"]["storefront-web"]["verify"],
+                "npm test && npm run build",
+            )
+
     def test_public_scanner_detects_secret_like_value(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
