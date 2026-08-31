@@ -1,35 +1,50 @@
 # Agentic Cross-Repository Harness
 
-A provider-neutral control plane for AI-assisted work across multiple Git repositories.
+English | [简体中文](README.zh-CN.md)
 
-The Harness gives agents and developers one place to define repository responsibilities, freeze cross-repository write scope, reference contract truth, validate each repository independently, and record integration outcomes. It does **not** copy business implementation into a coordination repository and it never treats automation as implicit permission to write everywhere.
+Safely coordinate AI coding agents across multiple Git repositories.
 
-## Why this exists
+This project generates a lightweight **control repository** that makes cross-repository work explicit: which repositories an agent may change, who owns contract truth, how every repository is verified, and where execution can safely resume.
 
-AI coding tools are effective inside one repository but become risky when a change spans an API provider, generated client, frontend, infrastructure, documentation, or another consumer. Common failure modes include:
+It is provider-neutral, uses only the Python standard library, and never modifies participant repositories during initialization.
 
-- modifying the wrong repository or an unregistered sibling;
-- allowing a consumer snapshot to redefine provider contract truth;
-- mixing multiple repositories into one rollback unit;
-- reporting integration success after running only one repository's tests;
-- losing the exact scope, decisions, recovery point, and next action between sessions.
+## What you get
 
-This project turns those boundaries into explicit repository files and deterministic checks.
+- an explicit registry of participating repositories and their responsibilities;
+- an ExecPlan template that acts as a per-task write boundary;
+- provider/consumer rules that prevent copied contracts from becoming competing truth;
+- repository-local verification and rollback units;
+- a read-only structural checker;
+- public-content scanning for common private-data indicators.
 
-## Core model
+## Who it is for
 
-```text
-Issue tracker        collaboration state, blockers, recovery, next action
-       │
-       ▼
-Control repository   inventory, ExecPlans, contract references, outcomes
-       │
-       ├── Provider repository   contract truth + implementation + tests
-       ├── Consumer repository   snapshots + consumption rules + tests
-       └── Other participants    independently owned implementation
+Use this Harness when an AI-assisted change can span an API, frontend, generated client, infrastructure, documentation, or another independently owned repository.
+
+It is especially useful for:
+
+- platform and architecture teams coordinating several repositories;
+- teams adopting Codex, Claude Code, Cursor, or other coding agents;
+- provider/consumer systems that need clear contract ownership;
+- long-running tasks that need durable recovery points and decision records.
+
+It is probably unnecessary for a small task contained entirely within one repository.
+
+## How it works
+
+```mermaid
+flowchart LR
+    I[Issue or request] --> C[Control repository]
+    C --> P[Provider repository]
+    C --> W[Consumer repository]
+    C --> O[Other participants]
+    P --> V[Independent verification]
+    W --> V
+    O --> V
+    V --> R[Review and writeback]
 ```
 
-The workflow is:
+The operating sequence is:
 
 ```text
 collect → gate → freeze → slice → implement
@@ -37,52 +52,43 @@ collect → gate → freeze → slice → implement
         → review → writeback → notify
 ```
 
-## Quick start
+The control repository coordinates work. It does not become a third copy of implementation or contract truth.
 
-Requirements: Python 3.10 or newer; no third-party Python packages.
+## Three-minute example
 
-1. Copy [examples/manifest.json](examples/manifest.json) and describe your repositories.
-2. Preview generated files:
+Requirements: Git and Python 3.10 or newer. No third-party Python packages are required.
 
-   ```bash
-   python scripts/init_harness.py \
-     --manifest examples/manifest.json \
-     --target ../sample-product-harness \
-     --dry-run
-   ```
+```bash
+git clone https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness.git
+cd agentic-cross-repo-harness
 
-3. Initialise the control repository:
+python scripts/init_harness.py \
+  --manifest examples/manifest.json \
+  --target ../sample-product-harness \
+  --dry-run
 
-   ```bash
-   python scripts/init_harness.py \
-     --manifest examples/manifest.json \
-     --target ../sample-product-harness
-   ```
+python scripts/init_harness.py \
+  --manifest examples/manifest.json \
+  --target ../sample-product-harness
 
-4. Validate it:
+python ../sample-product-harness/scripts/check_harness.py \
+  --root ../sample-product-harness
+```
 
-   ```bash
-   python scripts/check_harness.py --root ../sample-product-harness
-   ```
-
-5. After cloning all registered siblings, optionally verify that their paths exist:
-
-   ```bash
-   python scripts/check_harness.py \
-     --root ../sample-product-harness \
-     --verify-paths
-   ```
-
-The initializer writes only inside `--target`. It does not edit sibling repositories. Participant `AGENTS.md` files are installed manually only after a registration ExecPlan and explicit developer confirmation.
-
-## Generated control repository
+Expected final message:
 
 ```text
-<product>-harness/
+Harness validation passed
+```
+
+The generated control repository contains:
+
+```text
+sample-product-harness/
 ├── AGENTS.md
 ├── README.md
 ├── repos.yaml
-├── <product>.code-workspace
+├── sample-product.code-workspace
 ├── .agents/
 │   ├── PLANS.md
 │   └── plans/
@@ -99,20 +105,43 @@ The initializer writes only inside `--target`. It does not edit sibling reposito
     └── PARTICIPANT_AGENTS_TEMPLATE.md
 ```
 
-`repos.yaml` intentionally uses the JSON-compatible subset of YAML 1.2. This keeps it readable by YAML tools while allowing deterministic validation with the Python standard library.
+The initializer writes only inside `--target`. It does not edit `../sample-api`, `../sample-web`, or any other sibling.
 
-## Safety properties
+For Windows PowerShell instructions and a field-by-field manifest guide, see the [full quick start](docs/quick-start.md).
 
-- Exactly one registered repository has the `control` role and path `.`.
-- Other repositories must use explicit relative sibling paths beginning with `../`.
-- Cross-repository changes require an ExecPlan with a row for every registered repository.
-- Repositories without write permission are recorded as `none`.
-- Provider contract truth is referenced, not copied into the control repository.
-- Repository verification and rollback units remain independent.
-- The checker is read-only and never executes sibling commands.
-- Publishing, deployment, permission changes, deletion, and external data mutation remain separate confirmed actions.
+## The safety boundary
 
-See [docs/concepts.md](docs/concepts.md), [docs/quick-start.md](docs/quick-start.md), and [docs/security-model.md](docs/security-model.md).
+For every cross-repository task, copy the generated ExecPlan template and list every registered repository:
+
+```markdown
+| Repository | Allowed paths | Excluded paths |
+| --- | --- | --- |
+| harness | .agents/plans/2026-08-31/example.md | all other paths |
+| api | src/contracts/openapi.yaml | all other paths |
+| web | none | all |
+```
+
+`none` means no write authority. A repository or path absent from the allowed column is not authorized for modification.
+
+## Important guarantees
+
+- Exactly one registered repository has role `control` and path `.`.
+- Participants use explicit paths beneath the direct parent; absolute paths and parent traversal are rejected.
+- The checker is read-only and never runs participant verification commands.
+- Provider repositories own contract truth. Consumer snapshots do not replace it.
+- Commits, verification, and rollback remain repository-local.
+- Publishing, deployment, permission changes, deletion, and other external effects remain separately confirmed actions.
+
+See [Concepts](docs/concepts.md) and the [Security Model](docs/security-model.md) for the rationale.
+
+## Project status
+
+Version `0.1.0` is a working public foundation with deterministic generation, structural validation, tests, and private-content scanning. It deliberately does not orchestrate deployments, merges, issue trackers, or arbitrary commands across sibling repositories.
+
+- [Roadmap](ROADMAP.md)
+- [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
 
 ## Development
 
@@ -120,10 +149,6 @@ See [docs/concepts.md](docs/concepts.md), [docs/quick-start.md](docs/quick-start
 python -m unittest discover -s tests -p "test_*.py"
 python scripts/scan_public.py --root .
 ```
-
-## Status
-
-The current release is an initial public foundation. It provides deterministic scaffolding and structural validation. It deliberately does not orchestrate deployments, issue trackers, pull-request merges, or arbitrary commands across sibling repositories.
 
 ## License
 
