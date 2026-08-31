@@ -2,7 +2,7 @@
 
 All notable project changes are recorded here.
 
-## 0.2.0 - Unreleased
+## 0.2.0 - 2026-08-31
 
 - Added one canonical `AGENTS.md` policy with generated Cursor, Claude Code, and GitHub Copilot adapters.
 - Added manifest and CLI selection for `codex`, `cursor`, `claude`, and `copilot`, including automatic detection.
