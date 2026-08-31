@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+*.log
+logs/
+tmp/
+temp/
+.idea/
+.vscode/
+.agents/state/*
+!.agents/state/.gitkeep
+.agents/runs/*
+!.agents/runs/.gitkeep
