@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/agentic-cross-repo-harness/manifest.schema.json",
+  "$id": "https://raw.githubusercontent.com/tomcatlixiaoyao/agentic-cross-repo-harness/main/schema/manifest.schema.json",
   "title": "Agentic Cross-Repository Harness Manifest",
   "type": "object",
   "additionalProperties": false,
@@ -12,6 +12,14 @@
       "minLength": 1,
       "maxLength": 80,
       "pattern": "^[A-Za-z0-9][A-Za-z0-9._ -]{0,79}$"
+    },
+    "agent_tools": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["codex", "cursor", "claude", "copilot"]
+      }
     },
     "repositories": {
       "type": "array",

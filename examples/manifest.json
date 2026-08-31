@@ -1,6 +1,7 @@
 {
   "version": 1,
   "product": "sample-product",
+  "agent_tools": ["codex", "cursor", "claude", "copilot"],
   "repositories": [
     {
       "id": "harness",
