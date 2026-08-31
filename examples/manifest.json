@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "product": "sample-product",
+  "repositories": [
+    {
+      "id": "harness",
+      "path": ".",
+      "role": "control",
+      "duty": "Own cross-repository plans, authorisation, contract references, and integration outcomes",
+      "contracts": [],
+      "verify": "python scripts/check_harness.py --root ."
+    },
+    {
+      "id": "api",
+      "path": "../sample-api",
+      "role": "provider",
+      "duty": "Own the public API contract and server implementation",
+      "contracts": ["sample-api-v1"],
+      "verify": "python -m unittest"
+    },
+    {
+      "id": "web",
+      "path": "../sample-web",
+      "role": "consumer",
+      "duty": "Own the browser client, generated API snapshot, and user interface",
+      "contracts": ["sample-api-v1"],
+      "verify": "npm test && npm run build"
+    }
+  ]
+}

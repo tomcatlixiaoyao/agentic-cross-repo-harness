@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/agentic-cross-repo-harness/manifest.schema.json",
+  "title": "Agentic Cross-Repository Harness Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "product", "repositories"],
+  "properties": {
+    "version": {"const": 1},
+    "product": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._ -]{0,79}$"
+    },
+    "repositories": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path", "role", "duty", "contracts", "verify"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,62}$"
+          },
+          "path": {"type": "string", "minLength": 1},
+          "role": {
+            "enum": ["control", "provider", "consumer", "participant", "shared"]
+          },
+          "duty": {"type": "string", "minLength": 1},
+          "contracts": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1}
+          },
+          "verify": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

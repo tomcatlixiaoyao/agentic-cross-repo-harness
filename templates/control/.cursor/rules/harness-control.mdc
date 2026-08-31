@@ -1,0 +1,10 @@
+---
+description: Enter the cross-repository Harness before planning or modifying registered repositories.
+alwaysApply: true
+---
+
+Start with the control repository's `AGENTS.md`, `repos.yaml`, `docs/harness/inventory.md`, and `.agents/PLANS.md`.
+
+For any task that changes a non-control repository, create or update a cross-repository ExecPlan before implementation. Follow only the write paths authorised by that plan, preserve provider/consumer truth ownership, verify repositories independently, and record integration outcomes in the control repository.
+
+Do not modify unregistered siblings or treat the Harness as permission for publishing, deployment, access changes, destructive operations, or external data mutation.
