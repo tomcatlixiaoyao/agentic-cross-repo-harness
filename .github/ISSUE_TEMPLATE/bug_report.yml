@@ -1,0 +1,57 @@
+name: Bug report
+description: Report a reproducible problem in the Harness CLI or generated output.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the project. Use synthetic or redacted examples only. Do not include credentials, private URLs, customer data, or internal repository content.
+  - type: input
+    id: version
+    attributes:
+      label: Harness version
+      description: Run `harness --version` or provide the source commit.
+      placeholder: harness 0.2.0
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and redacted manifest
+      description: Include the exact command and the smallest public-safe manifest that reproduces the problem.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the complete error message after removing sensitive information.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public-safety confirmation
+      options:
+        - label: I have removed credentials, private endpoints, personal data, and internal repository content.
+          required: true

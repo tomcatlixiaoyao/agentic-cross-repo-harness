@@ -72,7 +72,19 @@ flowchart LR
 ## 三分钟体验
 
 从源码运行的前置条件：Git、Python 3.10 或更高版本，不需要安装第三方 Python 依赖。
-带版本标签的发布流程已经配置为生成 Windows、Linux 和 macOS 独立可执行程序。
+正式版本会生成 Windows、Linux 和 macOS 独立可执行程序。你可以从
+[最新版本](https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness/releases/latest)
+下载对应平台的文件，放入 `PATH` 后先验证：
+
+```text
+harness --version
+harness --help
+```
+
+Release 同时提供 `SHA256SUMS.txt`，运行前应核对下载文件的 SHA-256。Linux 和 macOS
+用户可能还需要先执行 `chmod +x harness-*`。
+
+如果希望直接从源码运行：
 
 ```bash
 git clone https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness.git
@@ -176,6 +188,7 @@ Windows PowerShell 命令和 manifest 字段说明请查看[完整快速开始](
 - [版本记录](CHANGELOG.md)
 - [参与贡献](CONTRIBUTING.md)
 - [安全策略](SECURITY.md)
+- [最新版本](https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness/releases/latest)
 
 ## 本地开发验证
 

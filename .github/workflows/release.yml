@@ -46,6 +46,27 @@ jobs:
           from pathlib import Path
           source = Path("dist/harness.exe" if Path("dist/harness.exe").exists() else "dist/harness")
           source.rename(Path("dist/${{ matrix.asset }}"))
+      - name: Smoke-test standalone executable
+        shell: python {0}
+        run: |
+          from pathlib import Path
+          import subprocess
+
+          executable = Path("dist/${{ matrix.asset }}").resolve()
+          version = subprocess.run(
+              [str(executable), "--version"],
+              check=True,
+              capture_output=True,
+              text=True,
+          )
+          help_result = subprocess.run(
+              [str(executable), "--help"],
+              check=True,
+              capture_output=True,
+              text=True,
+          )
+          assert version.stdout.startswith("harness "), version.stdout
+          assert "commands:" in help_result.stdout, help_result.stdout
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.asset }}

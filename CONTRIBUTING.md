@@ -11,3 +11,7 @@ Before opening a pull request:
 5. add or update tests for behavioural changes;
 6. run the unit tests and public-content scan;
 7. explain security-boundary changes explicitly in the pull request.
+
+Use the repository's issue forms for reproducible bugs and provider-neutral feature requests. Security
+vulnerabilities must be reported privately through the process in [SECURITY.md](SECURITY.md), not in a
+public issue.
