@@ -1,0 +1,36 @@
+name: Feature request
+description: Propose a provider-neutral improvement or integration.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the workflow problem rather than a company-specific implementation. Proposed features must preserve explicit write boundaries and separate confirmation for external effects.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What cross-repository workflow is difficult today, and who encounters it?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Show the smallest user-facing example that would solve the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety and authority impact
+      description: Explain whether this changes write boundaries, command execution, publishing, deployment, permissions, or deletion.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional workarounds or related tools.

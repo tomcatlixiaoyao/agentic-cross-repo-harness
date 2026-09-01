@@ -63,7 +63,19 @@ The control repository coordinates work. It does not become a third copy of impl
 ## Three-minute example
 
 Requirements when running from source: Git and Python 3.10 or newer. No third-party Python packages are required.
-Tagged releases are configured to publish standalone Windows, Linux, and macOS executables.
+Tagged releases publish standalone Windows, Linux, and macOS executables. Download the asset for your
+platform from the [latest release](https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness/releases/latest),
+place it on your `PATH`, and verify it before use:
+
+```text
+harness --version
+harness --help
+```
+
+Release assets include `SHA256SUMS.txt`. Verify the downloaded executable against that file before
+running it. Linux and macOS users may need to run `chmod +x harness-*` first.
+
+To run directly from source instead:
 
 ```bash
 git clone https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness.git
@@ -169,6 +181,7 @@ issue trackers, or arbitrary commands across sibling repositories.
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
+- [Latest release](https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness/releases/latest)
 
 ## Development
 

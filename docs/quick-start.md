@@ -2,7 +2,21 @@
 
 This guide starts with a fresh clone and ends with a generated, validated control repository.
 
-## 1. Clone the generator
+## 1. Choose a distribution
+
+For the shortest setup, download the executable for your platform and `SHA256SUMS.txt` from the
+[latest release](https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness/releases/latest).
+Verify the checksum, rename the executable to `harness` (or `harness.exe` on Windows), and place it
+on your `PATH`.
+
+```text
+harness --version
+harness --help
+```
+
+Linux and macOS users may need to make the downloaded file executable with `chmod +x`.
+
+To use the source checkout instead:
 
 ```bash
 git clone https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness.git
@@ -12,6 +26,8 @@ cd agentic-cross-repo-harness
 Requirements when running from source: Python 3.10 or newer. The generator uses no third-party Python packages.
 
 On Windows, use `python` or `py -3`. On Linux and macOS, use `python3` if `python` is not available.
+The remaining examples use the source form; executable users can replace
+`python scripts/harness_cli.py` with `harness`.
 
 ## 2. Arrange repositories as siblings
 

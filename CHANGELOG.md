@@ -5,6 +5,10 @@ All notable project changes are recorded here.
 ## Unreleased
 
 - Upgraded GitHub Actions dependencies to their Node.js 24 runtime versions.
+- Added direct release-download guidance and checksum verification instructions.
+- Added GitHub issue and pull-request templates for public-safe contributions.
+- Added manifest-schema contract tests and standalone executable smoke tests.
+- Updated roadmap status to match the published v0.2.0 release and CI implementation.
 
 ## 0.2.0 - 2026-08-31
 

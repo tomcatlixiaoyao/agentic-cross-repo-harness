@@ -6,9 +6,10 @@ The roadmap favors safer adoption and clearer evidence over broad orchestration.
 
 - Provide a unified command for initialization, validation, and diagnostics. (implemented)
 - Generate thin Codex, Cursor, Claude Code, and GitHub Copilot adapters from one canonical policy. (implemented)
-- Build standalone Windows, Linux, and macOS release assets. (automation implemented; first tagged release pending)
+- Build standalone Windows, Linux, and macOS release assets. (implemented in v0.2.0)
 - Add a complete provider/consumer example with expected generated output. (implemented)
-- Add continuous integration for tests and public-content scanning.
+- Add continuous integration for tests and public-content scanning. (implemented)
+- Smoke-test standalone executables before publishing. (implemented)
 - Validate the manifest against the published JSON Schema.
 - Improve diagnostics with stable error codes and remediation hints.
 

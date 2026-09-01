@@ -13,7 +13,14 @@ sys.path.insert(0, str(SCRIPTS))
 
 from check_harness import validate  # noqa: E402
 from doctor_harness import diagnose  # noqa: E402
-from harness_lib import HarnessError, load_manifest  # noqa: E402
+from harness_lib import (  # noqa: E402
+    ALLOWED_ROLES,
+    ID_PATTERN,
+    PRODUCT_PATTERN,
+    SUPPORTED_AGENT_TOOLS,
+    HarnessError,
+    load_manifest,
+)
 from init_harness import initialise  # noqa: E402
 from scan_public import scan  # noqa: E402
 
@@ -267,6 +274,26 @@ class HarnessTests(unittest.TestCase):
                 registry["repositories"]["storefront-web"]["verify"],
                 "npm test && npm run build",
             )
+
+    def test_published_schema_matches_runtime_manifest_vocabulary(self) -> None:
+        schema = json.loads(
+            (PROJECT_ROOT / "schema" / "manifest.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        properties = schema["properties"]
+        repository_properties = properties["repositories"]["items"]["properties"]
+
+        self.assertEqual(properties["version"]["const"], 1)
+        self.assertEqual(properties["product"]["pattern"], PRODUCT_PATTERN.pattern)
+        self.assertEqual(repository_properties["id"]["pattern"], ID_PATTERN.pattern)
+        self.assertEqual(set(repository_properties["role"]["enum"]), ALLOWED_ROLES)
+        self.assertEqual(
+            tuple(properties["agent_tools"]["items"]["enum"]),
+            SUPPORTED_AGENT_TOOLS,
+        )
+        self.assertFalse(schema["additionalProperties"])
+        self.assertFalse(properties["repositories"]["items"]["additionalProperties"])
 
     def test_public_scanner_detects_secret_like_value(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
