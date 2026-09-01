@@ -4,6 +4,10 @@ All notable project changes are recorded here.
 
 ## Unreleased
 
+## 0.3.0 - 2026-09-01
+
+- Added a read-only `harness discover` command that drafts a manifest from direct child Git repositories.
+- Added conservative Maven, Gradle, npm, Go, and Cargo verification-command suggestions without executing them.
 - Upgraded GitHub Actions dependencies to their Node.js 24 runtime versions.
 - Added direct release-download guidance and checksum verification instructions.
 - Added GitHub issue and pull-request templates for public-safe contributions.

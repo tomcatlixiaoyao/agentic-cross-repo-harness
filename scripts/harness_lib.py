@@ -13,7 +13,7 @@ from typing import Any
 
 
 ALLOWED_ROLES = {"control", "provider", "consumer", "participant", "shared"}
-HARNESS_VERSION = "0.2.0"
+HARNESS_VERSION = "0.3.0"
 SUPPORTED_AGENT_TOOLS = ("codex", "cursor", "claude", "copilot")
 LEGACY_AGENT_TOOLS = ("codex", "cursor")
 AGENT_TOOL_CONFIG_PATHS = {

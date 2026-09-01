@@ -15,6 +15,7 @@ The roadmap favors safer adoption and clearer evidence over broad orchestration.
 
 ## 0.3 - Ecosystem integration
 
+- Add read-only sibling-repository discovery and conservative verification-command suggestions. (implemented)
 - Add adapters for Gemini CLI and other tools with stable repository instruction formats.
 - Add optional issue and pull-request writeback adapters behind explicit confirmation.
 - Add contract hash and snapshot-drift reporting without duplicating provider truth.

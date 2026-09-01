@@ -44,7 +44,26 @@ The manifest uses `.` for the future control repository and explicit `../<name>`
 
 ## 3. Create a manifest
 
-Copy `examples/manifest.json` and adjust it for your repositories. The optional top-level
+To create a conservative draft from direct child Git repositories, run:
+
+```bash
+python scripts/harness_cli.py discover \
+  --root .. \
+  --product sample-product \
+  --exclude agentic-cross-repo-harness \
+  --output ../sample-manifest.json
+```
+
+Without `--output`, the draft is printed to standard output and nothing is written. Discovery ignores
+non-Git directories and symbolic-link directories, accepts both normal `.git` directories and worktree
+`.git` files, and never executes the suggested verification commands. Repeat `--exclude` for repositories
+that are outside this Harness.
+
+Every discovered participant starts with role `participant`, an empty contract list, and a `TODO` duty.
+Review those values and every suggested command before initialization; repository structure cannot prove
+architecture ownership or whether a command is safe for a particular environment.
+
+Alternatively, copy `examples/manifest.json` and adjust it manually. The optional top-level
 `agent_tools` array selects generated adapters: `codex`, `cursor`, `claude`, and `copilot`.
 If omitted, all adapters are generated. Every repository entry requires:
 
