@@ -65,8 +65,15 @@ jobs:
               capture_output=True,
               text=True,
           )
+          discover_help = subprocess.run(
+              [str(executable), "discover", "--help"],
+              check=True,
+              capture_output=True,
+              text=True,
+          )
           assert version.stdout.startswith("harness "), version.stdout
           assert "commands:" in help_result.stdout, help_result.stdout
+          assert "--root" in discover_help.stdout, discover_help.stdout
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.asset }}

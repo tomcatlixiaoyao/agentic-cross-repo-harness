@@ -18,6 +18,7 @@ uses only the Python standard library when run from source, and never modifies p
 - a read-only structural checker;
 - thin coding-agent adapters backed by one canonical `AGENTS.md`;
 - a doctor command that explains adapter and verification readiness;
+- a read-only workspace discovery command that drafts a manifest from sibling Git repositories;
 - public-content scanning for common private-data indicators.
 
 Repository verification commands are opaque strings, so participants can use Maven, Gradle, npm,
@@ -81,14 +82,20 @@ To run directly from source instead:
 git clone https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness.git
 cd agentic-cross-repo-harness
 
+python scripts/harness_cli.py discover \
+  --root .. \
+  --product sample-product \
+  --exclude agentic-cross-repo-harness \
+  --output ../sample-manifest.json
+
 python scripts/harness_cli.py init \
-  --manifest examples/manifest.json \
+  --manifest ../sample-manifest.json \
   --target ../sample-product-harness \
   --tools auto \
   --dry-run
 
 python scripts/harness_cli.py init \
-  --manifest examples/manifest.json \
+  --manifest ../sample-manifest.json \
   --target ../sample-product-harness \
   --tools auto
 
@@ -103,6 +110,10 @@ Harness validation passed
 ```
 
 Doctor then reports each configured adapter and finishes with a structural-check result.
+
+`discover` scans only direct child Git repositories, never executes the suggested verification commands,
+and writes nothing unless `--output` is supplied. It cannot infer architecture ownership: review every
+draft role, duty, contract, and verification command before initialization.
 
 The generated control repository contains:
 
@@ -173,9 +184,10 @@ See [Concepts](docs/concepts.md) and the [Security Model](docs/security-model.md
 
 ## Project status
 
-Version `0.2.0` adds multi-agent-tool adapters, automatic adapter selection, a unified CLI, doctor diagnostics,
-and portable executable build automation. It deliberately does not orchestrate deployments, merges,
-issue trackers, or arbitrary commands across sibling repositories.
+Version `0.3.0` adds read-only sibling-repository discovery and conservative verification-command
+suggestions on top of the multi-agent adapters, unified CLI, doctor diagnostics, and portable executables.
+It deliberately does not orchestrate deployments, merges, issue trackers, or arbitrary commands across
+sibling repositories.
 
 - [Roadmap](ROADMAP.md)
 - [Changelog](CHANGELOG.md)

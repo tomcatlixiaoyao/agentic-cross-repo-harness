@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import io
 import json
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 
 
@@ -12,15 +14,18 @@ SCRIPTS = PROJECT_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from check_harness import validate  # noqa: E402
+from discover_harness import discover, write_manifest  # noqa: E402
 from doctor_harness import diagnose  # noqa: E402
 from harness_lib import (  # noqa: E402
     ALLOWED_ROLES,
+    HARNESS_VERSION,
     ID_PATTERN,
     PRODUCT_PATTERN,
     SUPPORTED_AGENT_TOOLS,
     HarnessError,
     load_manifest,
 )
+from harness_cli import main as harness_main  # noqa: E402
 from init_harness import initialise  # noqa: E402
 from scan_public import scan  # noqa: E402
 
@@ -64,6 +69,118 @@ class HarnessTests(unittest.TestCase):
         path.write_text(json.dumps(data or manifest_data()), encoding="utf-8")
         return path
 
+    def make_git_repository(
+        self, directory: Path, name: str, files: dict[str, str] | None = None
+    ) -> Path:
+        repository = directory / name
+        (repository / ".git").mkdir(parents=True)
+        for relative, content in (files or {}).items():
+            destination = repository / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(content, encoding="utf-8")
+        return repository
+
+    def test_discover_builds_loadable_manifest_with_conservative_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            api = self.make_git_repository(
+                root,
+                "catalog-api",
+                {"pom.xml": "<project />", "mvnw": "wrapper"},
+            )
+            web = self.make_git_repository(
+                root,
+                "storefront_web",
+                {
+                    "package.json": json.dumps(
+                        {"scripts": {"test": "vitest", "build": "vite build"}}
+                    )
+                },
+            )
+            ignored = self.make_git_repository(root, "ignore-me")
+            (root / "ordinary-folder").mkdir()
+            markers = {
+                api: sorted(path.name for path in api.iterdir()),
+                web: sorted(path.name for path in web.iterdir()),
+                ignored: sorted(path.name for path in ignored.iterdir()),
+            }
+
+            payload = discover(
+                root,
+                "catalog-workspace",
+                tools="codex,claude",
+                exclude=["ignore-me"],
+            )
+            repositories = payload["repositories"]
+            self.assertEqual(
+                [(repo["id"], repo["path"]) for repo in repositories],
+                [
+                    ("harness", "."),
+                    ("catalog-api", "../catalog-api"),
+                    ("storefront-web", "../storefront_web"),
+                ],
+            )
+            self.assertEqual(repositories[1]["verify"], "./mvnw test")
+            self.assertEqual(
+                repositories[2]["verify"], "npm test && npm run build"
+            )
+            self.assertEqual(payload["agent_tools"], ["codex", "claude"])
+
+            output = root / "draft-manifest.json"
+            write_manifest(payload, output)
+            loaded = load_manifest(output)
+            self.assertEqual(loaded.product, "catalog-workspace")
+            for repository, before in markers.items():
+                self.assertEqual(
+                    sorted(path.name for path in repository.iterdir()), before
+                )
+
+    def test_discover_assigns_deterministic_unique_ids(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_git_repository(root, "api-repo")
+            worktree = root / "api_repo"
+            worktree.mkdir()
+            (worktree / ".git").write_text("gitdir: ../metadata", encoding="utf-8")
+
+            payload = discover(root, "collision-example")
+            self.assertEqual(
+                [repo["id"] for repo in payload["repositories"]],
+                ["harness", "api-repo", "api-repo-2"],
+            )
+
+    def test_discover_refuses_to_replace_output_without_force(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_git_repository(root, "api")
+            payload = discover(root, "safe-output")
+            output = root / "manifest.json"
+            output.write_text("user content", encoding="utf-8")
+
+            with self.assertRaises(HarnessError):
+                write_manifest(payload, output)
+            self.assertEqual(output.read_text(encoding="utf-8"), "user content")
+            write_manifest(payload, output, force=True)
+            self.assertEqual(load_manifest(output).product, "safe-output")
+
+    def test_unified_cli_exposes_read_only_discovery(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_git_repository(root, "service", {"go.mod": "module example"})
+            stdout = io.StringIO()
+
+            with redirect_stdout(stdout):
+                result = harness_main(
+                    ["discover", "--root", str(root), "--product", "cli-example"]
+                )
+
+            self.assertEqual(result, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["repositories"][1]["verify"], "go test ./...")
+            self.assertEqual(
+                sorted(path.name for path in root.iterdir()), ["service"]
+            )
+
     def test_manifest_loads_valid_roles_and_control(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -73,6 +190,11 @@ class HarnessTests(unittest.TestCase):
                 [repo.repo_id for repo in manifest.repositories],
                 ["harness", "api", "web"],
             )
+
+    def test_project_metadata_matches_runtime_version(self) -> None:
+        metadata = (PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        self.assertIn(f'version = "{HARNESS_VERSION}"', metadata)
+        self.assertEqual(HARNESS_VERSION, "0.3.0")
 
     def test_manifest_rejects_absolute_participant_path(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

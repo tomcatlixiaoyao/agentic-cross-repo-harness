@@ -30,6 +30,7 @@ Harness 将这些约束落成可审查的仓库文件和确定性检查。
 - 不执行任何业务命令的只读结构校验器；
 - 由同一份 `AGENTS.md` 驱动的轻量 AI 工具适配层；
 - 用于说明适配状态和验证配置的 doctor 命令；
+- 从相邻 Git 仓库生成 manifest 草稿的只读工作区发现命令；
 - 面向公开发布的常见敏感信息扫描器。
 
 各仓库的验证命令会被视为不透明字符串，因此参与项目可以使用 Maven、Gradle、npm、Go、Cargo
@@ -90,14 +91,20 @@ Release 同时提供 `SHA256SUMS.txt`，运行前应核对下载文件的 SHA-25
 git clone https://github.com/tomcatlixiaoyao/agentic-cross-repo-harness.git
 cd agentic-cross-repo-harness
 
+python scripts/harness_cli.py discover \
+  --root .. \
+  --product sample-product \
+  --exclude agentic-cross-repo-harness \
+  --output ../sample-manifest.json
+
 python scripts/harness_cli.py init \
-  --manifest examples/manifest.json \
+  --manifest ../sample-manifest.json \
   --target ../sample-product-harness \
   --tools auto \
   --dry-run
 
 python scripts/harness_cli.py init \
-  --manifest examples/manifest.json \
+  --manifest ../sample-manifest.json \
   --target ../sample-product-harness \
   --tools auto
 
@@ -112,6 +119,10 @@ Harness validation passed
 ```
 
 随后 doctor 会列出各适配器状态，并给出结构检查结果。
+
+`discover` 只扫描工作区根目录下的直接子 Git 仓库，不会执行推测出的验证命令；只有显式提供
+`--output` 时才会写入一个 manifest 文件。它无法判断真实架构归属，初始化前必须人工确认草稿中的
+角色、职责、契约和验证命令。
 
 生成结果如下：
 
@@ -181,8 +192,8 @@ Windows PowerShell 命令和 manifest 字段说明请查看[完整快速开始](
 
 ## 项目状态
 
-`0.2.0` 增加了多 AI 工具适配、自动适配选择、统一命令入口、doctor 诊断和独立程序构建自动化。
-它仍不会自动执行部署、合并 PR、操作 Issue 系统或跨仓运行任意命令。
+`0.3.0` 在多 AI 工具适配、统一命令入口、doctor 诊断和独立程序的基础上，增加了只读的相邻仓库
+发现与保守验证命令建议。它仍不会自动执行部署、合并 PR、操作 Issue 系统或跨仓运行任意命令。
 
 - [路线图](ROADMAP.md)
 - [版本记录](CHANGELOG.md)
